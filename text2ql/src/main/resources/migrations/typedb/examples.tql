@@ -1,0 +1,39 @@
+#select city, location, region
+
+match
+$city isa city;
+$city has id $city_id;
+$city has code $city_code;
+$city has name $city_name;
+$location isa location;
+$location has code $location_code;
+$location has name $location_name;
+$region isa region;
+$region has id $region_id;
+$region has code $region_code;
+$region has name $region_name;
+$region_cities ($region, $city) isa region_cities;
+$city_locations ($city, $location) isa city_locations;
+get $city, $location, $region, $city_id, $city_code, $city_name, $location_code, $location_name,
+$region_id, $region_code, $region_name, $region_cities, $city_locations; offset 0; limit 10;
+
+#select all
+match $region isa region; $region has id $region_id; $region has code $region_code; $region has name $region_name;
+$city isa city; $city has id $city_id; $city has code $city_code; $city has name $city_name;
+$location isa location; $location has code $location_code; $location has name $location_name;
+$department isa department; $department has id $department_id; $department has code $department_code; $department has name $department_name; $department has path $department_path;
+$job_function isa job_function; $job_function has id $job_function_id; $job_function has code $job_function_code; $job_function has name $job_function_name;
+$job isa job; $job has id $job_id; $job has code $job_code; $job has name $job_name;
+$employee isa employee; $employee has name $employee_name; $employee has hired_date $employee_hired_date; $employee has gender $employee_gender; $employee has id $employee_id; $employee has email $employee_email;
+$region_cities ($region, $city) isa region_cities;
+$job_employees ($job, $employee) isa job_employees;
+$location_departments ($location, $department) isa location_departments;
+$function_jobs ($job_function, $job) isa function_jobs;
+$department_employees ($department, $employee) isa department_employees;
+$city_locations ($city, $location) isa city_locations;
+get $region, $city, $location, $department, $job_function, $job, $employee, $region_id, $region_code,
+$region_name, $city_id, $city_code, $city_name, $location_code, $location_name, $department_id, $department_code,
+$department_name, $department_path, $job_function_id, $job_function_code, $job_function_name, $job_id, $job_code,
+$job_name, $employee_name, $employee_hired_date, $employee_gender, $employee_id, $employee_email, $region_cities,
+$job_employees, $location_departments, $function_jobs, $department_employees, $city_locations;
+sort $employee_id asc;offset 0;limit 10;

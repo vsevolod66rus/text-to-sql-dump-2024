@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="simple example of hr domain" author="vsevolod66rus">
+        <sqlFile path="sql_hr.sql" relativeToChangelogFile="true"/>
+    </changeSet>
+
+    <changeSet id="ltree mapping 4s" author="vsevolod66rus">
+        <!--        requires rolsuper-->
+        <createProcedure>
+            DO
+            $func$
+            BEGIN
+            CASE
+            WHEN (select rolsuper
+                  from pg_roles
+                  where rolname = current_user)
+                then create
+            or replace function hr.ltree_invarchar(varchar) returns hr.ltree as
+                $$
+            select hr.ltree_in($1::cstring);
+            $$
+            language sql immutable;
+            ELSE null;
+            END
+            CASE;
+            END
+            $func$;
+        </createProcedure>
+
+        <!--        requires rolsuper-->
+        <createProcedure>
+            DO
+            $func$
+            BEGIN
+            CASE
+            WHEN (select rolsuper
+                  from pg_roles
+                  where rolname = current_user)
+                then do
+                $$
+            begin
+            create cast (varchar as hr.ltree) with function hr.ltree_invarchar(varchar) as implicit;
+            exception
+                        when duplicate_object then null;
+            end
+                $$;
+            ELSE null;
+            END
+            CASE;
+            END
+            $func$;
+        </createProcedure>
+    </changeSet>
+
+</databaseChangeLog>

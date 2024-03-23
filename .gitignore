@@ -1,0 +1,12 @@
+*.class
+*.log
+.sc
+.env
+
+.bsp
+.idea
+
+target
+project/target
+project/project
+logs

@@ -1,0 +1,229 @@
+vertices:
+  - title: Регион
+    vertex_name: region
+    from: regions
+    group_by: null
+    having: null
+    join: null
+    order_by: null
+    where: null
+    select: '*'
+    key: id
+    header: name
+  - title: Город
+    vertex_name: city
+    from: cities
+    group_by: null
+    having: null
+    join: null
+    order_by: null
+    where: null
+    select: '*'
+    key: id
+    header: name
+  - title: Локация (офис)
+    vertex_name: location
+    from: locations
+    group_by: null
+    having: null
+    join: null
+    order_by: null
+    where: null
+    select: '*'
+    key: id
+    header: name
+  - title: Департамент
+    vertex_name: department
+    from: departments
+    group_by: null
+    having: null
+    join: null
+    order_by: null
+    where: null
+    select: '*'
+    key: id
+    header: name
+  - title: Рабочая функция
+    vertex_name: job_function
+    from: job_functions
+    group_by: null
+    having: null
+    join: null
+    order_by: null
+    where: null
+    select: '*'
+    key: id
+    header: name
+  - title: Должность
+    vertex_name: job
+    from: jobs
+    group_by: null
+    having: null
+    join: null
+    order_by: null
+    where: null
+    select: '*'
+    key: id
+    header: name
+  - title: Сотрудник
+    vertex_name: employee
+    from: employees
+    group_by: null
+    having: null
+    join: null
+    order_by: null
+    where: fired is false
+    select: '*'
+    key: id
+    header: name
+attributes:
+  - vertex_name: region
+    attribute_name: region_id
+    attribute_type: string
+    attribute_value: id
+    title: Идентификатор региона
+  - vertex_name: region
+    attribute_name: region_code
+    attribute_type: string
+    attribute_value: code
+    title: Код региона
+  - vertex_name: region
+    attribute_name: region_name
+    attribute_type: string
+    attribute_value: name
+    title: Имя региона
+  - vertex_name: city
+    attribute_name: city_id
+    attribute_type: string
+    attribute_value: id
+    title: Идентификатор города
+  - vertex_name: city
+    attribute_name: city_code
+    attribute_type: string
+    attribute_value: code
+    title: Код города
+  - vertex_name: city
+    attribute_name: city_name
+    attribute_type: string
+    attribute_value: name
+    title: Имя города
+  - vertex_name: city
+    attribute_name: city_id
+    attribute_type: string
+    attribute_value: id
+    title: Идентификатор локации
+  - vertex_name: location
+    attribute_name: location_code
+    attribute_type: string
+    attribute_value: code
+    title: Код локации
+  - vertex_name: location
+    attribute_name: location_name
+    attribute_type: string
+    attribute_value: name
+    title: Имя локации
+  - vertex_name: department
+    attribute_name: department_id
+    attribute_type: string
+    attribute_value: id
+    title: Идентификатор департамента
+  - vertex_name: department
+    attribute_name: department_code
+    attribute_type: string
+    attribute_value: code
+    title: Код департамента
+  - vertex_name: department
+    attribute_name: department_name
+    attribute_type: string
+    attribute_value: name
+    title: Имя департамента
+  - vertex_name: department
+    attribute_name: department_path
+    attribute_type: string
+    attribute_value: path
+    title: Отношения подчиненности департамента
+  - vertex_name: job_function
+    attribute_name: job_function_id
+    attribute_type: string
+    attribute_value: id
+    title: Идентификатор функции
+  - vertex_name: job_function
+    attribute_name: job_function_code
+    attribute_type: string
+    attribute_value: code
+    title: Код функции
+  - vertex_name: job_function
+    attribute_name: job_function_name
+    attribute_type: string
+    attribute_value: name
+    title: Имя функции
+  - vertex_name: job
+    attribute_name: job_id
+    attribute_type: string
+    attribute_value: id
+    title: Идентификатор должности
+  - vertex_name: job
+    attribute_name: job_code
+    attribute_type: string
+    attribute_value: code
+    title: Код дожности
+  - vertex_name: job
+    attribute_name: job_name
+    attribute_type: string
+    attribute_value: name
+    title: Наименование должности
+  - vertex_name: employee
+    attribute_name: employee_id
+    attribute_type: string
+    attribute_value: id
+    title: Идентификатор сотрудника
+  - vertex_name: employee
+    attribute_name: employee_name
+    attribute_type: string
+    attribute_value: name
+    title: Имя сотрудника
+  - vertex_name: employee
+    attribute_name: employee_gender
+    attribute_type: boolean
+    attribute_value: gender
+    title: Пол сотрудника
+  - vertex_name: employee
+    attribute_name: employee_email
+    attribute_type: string
+    attribute_value: email
+    title: Почта сотрудника
+  - vertex_name: employee
+    attribute_name: employee_hired_date
+    attribute_type: datetime
+    attribute_value: hired_date
+    title: Дата найма сотрудника
+  - vertex_name: employee
+    attribute_name: employee_fired_date
+    attribute_type: datetime
+    attribute_value: fired_date
+    title: Дата увольнения сотрудника
+edges:
+  - from: region
+    to: city
+    from_key: id
+    to_key: region_id
+  - from: city
+    to: location
+    from_key: id
+    to_key: city_id
+  - from: location
+    to: department
+    from_key: id
+    to_key: location_id
+  - from: job_function
+    to: job
+    from_key: id
+    to_key: function_id
+  - from: department
+    to: employee
+    from_key: id
+    to_key: department_id
+  - from: job
+    to: employee
+    from_key: id
+    to_key: job_id
