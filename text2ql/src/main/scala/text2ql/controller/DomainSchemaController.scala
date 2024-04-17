@@ -63,28 +63,6 @@ class DomainSchemaController[F[_]: Async](
       .out(jsonBody[List[CheckDomainSchemaResponse]])
       .serverLogicRecoverErrors { case (domain, entities, onlySet, body) =>
         domainSchemaChecker.relationsCheck(domain, entities, onlySet, body)
-      },
-    adminBaseEndpoint.post
-      .in("typeDB")
-      .in("domainSchema")
-      .in("baseCheck")
-      .in(path[Domain]("domain").onDecodeFailureNextEndpoint)
-      .in(streamTextBody(Fs2Streams[F])(CodecFormat.OctetStream(), StandardCharsets.UTF_8.some))
-      .out(jsonBody[List[CheckDomainSchemaResponse]])
-      .serverLogicRecoverErrors { case (domain, body) =>
-        domainSchemaChecker.baseCheckTypeDB(domain, body)
-      },
-    adminBaseEndpoint.post
-      .in("typeDB")
-      .in("domainSchema")
-      .in("relationsCheck")
-      .in(path[Domain]("domain").onDecodeFailureNextEndpoint)
-      .in(query[List[String]]("entities").description("leave blank for all domain entities"))
-      .in(query[Boolean]("onlySet").description("don't test power set"))
-      .in(streamTextBody(Fs2Streams[F])(CodecFormat.OctetStream(), StandardCharsets.UTF_8.some))
-      .out(jsonBody[List[CheckDomainSchemaResponse]])
-      .serverLogicRecoverErrors { case (domain, entities, onlySet, body) =>
-        domainSchemaChecker.relationsCheckTypeDB(domain, entities, onlySet, body)
       }
   )
 }

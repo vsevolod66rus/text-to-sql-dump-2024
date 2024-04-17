@@ -21,13 +21,6 @@ object App extends WSApp[ApplicationConfig] {
 
   override def service[F[+_]: Async: Parallel: Logger]: Resource[F, WebService[F]] = {
 
-//    def newTypeDBClient(url: String): Resource[F, TypeDBClient] =
-//      Resource.fromAutoCloseable(Async[F].delay(TypeDB.coreClient(url)))
-
-    // пусть полежит внутри F[] - чтобы не поднимать typeDB для старта приложения
-    def newTypeDBClientF(url: String): Resource[F, F[TypeDBClient]] =
-      Resource.make(Async[F].delay(Async[F].delay(TypeDB.coreClient(url))))(clientF => clientF.map(_.close()))
-
     for {
       conf                     <- Resource.eval(ConfigSource.default.loadF[F, ApplicationConfig]())
       xaStorage                <- TransactorProvider[F](changelog, classLoader, conf.database.storage)
@@ -35,10 +28,8 @@ object App extends WSApp[ApplicationConfig] {
       domainSchema             <- DomainSchemaService[F]
       _                        <- QueryBuilder[F](domainSchema, conf.database.data)
       qm                       <- QueryManager[F](xaStorage)
-      typeDBClientF            <- newTypeDBClientF(conf.typeDB.url)
-      typeDBTransactionManager <- TypeDBTransactionManager[F](typeDBClientF, conf.typeDB)
-      domainSchemaChecker      <- DomainSchemaChecker[F](qm, conf.database.data, typeDBTransactionManager, conf.typeDB)
-      migrationRepo            <- MigrationRepo[F](xaStorage, typeDBTransactionManager, conf.database.data)
+      domainSchemaChecker      <- DomainSchemaChecker[F](qm, conf.database.data)
+      migrationRepo            <- MigrationRepo[F](xaStorage, conf.database.data)
       migrationService         <- MigrationService[F](migrationRepo)
       schemaController         <- DomainSchemaController[F](domainSchema, domainSchemaChecker)
       migrationsController     <- MigrationController[F](migrationService)

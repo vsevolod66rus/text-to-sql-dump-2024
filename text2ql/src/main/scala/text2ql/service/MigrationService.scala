@@ -4,8 +4,16 @@ import cats.effect.kernel._
 import text2ql.dao.MigrationRepo
 
 trait MigrationService[F[_]] {
-  def generateEmployees(n: Int): F[Unit]
   def insertHrToTypeDB(): F[Unit]
+  def insertCountries(): F[Unit]
+  def insertCities(): F[Unit]
+  def insertDepartments(): F[Unit]
+  def insertJobFunctions(): F[Unit]
+  def insertJobs(): F[Unit]
+  def insertHeadMembers(): F[Unit]
+  def insertDepartmentsHeads(): F[Unit]
+  def insertOtherEmployees(): F[Unit]
+  def insertWomen(): F[Unit]
 }
 
 object MigrationService {
@@ -19,6 +27,14 @@ object MigrationService {
 class MigrationServiceImpl[F[_]](
     migrationRepo: MigrationRepo[F]
 ) extends MigrationService[F] {
-  override def generateEmployees(n: Int): F[Unit] = migrationRepo.generateEmployees(n)
-  override def insertHrToTypeDB(): F[Unit]        = migrationRepo.insertHrToTypeDB()
+  override def insertHrToTypeDB(): F[Unit] = migrationRepo.insertHrToTypeDB()
+  def insertCountries(): F[Unit]           = migrationRepo.insertCountries()
+  def insertCities(): F[Unit]              = migrationRepo.insertCities()
+  def insertDepartments(): F[Unit]         = migrationRepo.insertDepartments()
+  def insertJobFunctions(): F[Unit]        = migrationRepo.insertJobFunctions()
+  def insertJobs(): F[Unit]                = migrationRepo.insertJobs()
+  def insertHeadMembers(): F[Unit]         = migrationRepo.insertHeadMembers()
+  def insertDepartmentsHeads(): F[Unit]    = migrationRepo.insertDepartmentsHeads()
+  def insertOtherEmployees(): F[Unit]      = migrationRepo.insertOtherEmployees()
+  def insertWomen(): F[Unit] = migrationRepo.insertWomen()
 }
