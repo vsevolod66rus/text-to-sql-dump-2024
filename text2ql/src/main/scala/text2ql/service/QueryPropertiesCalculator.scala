@@ -7,7 +7,7 @@ import text2ql.error.ServerError.ServerErrorWithMessage
 import text2ql.service.DomainSchemaService._
 
 trait UserRequestTypeCalculator[F[_]] {
-  def calculateDBQueryProperties(entities: List[ClarifiedNamedEntity], domain: Domain): F[DBQueryProperties]
+  def calculateDBQueryProperties(entities: List[EnrichedNamedEntity], domain: Domain): F[DBQueryProperties]
 }
 
 object UserRequestTypeCalculator {
@@ -19,7 +19,7 @@ object UserRequestTypeCalculator {
 class UserRequestTypeCalculatorImpl[F[+_]: Sync](domainSchema: DomainSchemaService[F])
     extends UserRequestTypeCalculator[F] {
 
-  def calculateDBQueryProperties(entities: List[ClarifiedNamedEntity], domain: Domain): F[DBQueryProperties] =
+  def calculateDBQueryProperties(entities: List[EnrichedNamedEntity], domain: Domain): F[DBQueryProperties] =
     for {
       targetOpt        <- entities.find(_.isTarget).pure[F]
       targetVertexName <- getTargetVertexName(targetOpt, domain)
@@ -31,34 +31,28 @@ class UserRequestTypeCalculatorImpl[F[+_]: Sync](domainSchema: DomainSchemaServi
       visualization = List.empty
     )
 
-  private def getTargetVertexName(targetOpt: Option[ClarifiedNamedEntity], domain: Domain): F[String] = for {
+  private def getTargetVertexName(targetOpt: Option[EnrichedNamedEntity], domain: Domain): F[String] = for {
     targetEntity        <- Sync[F].fromOption(targetOpt, ServerErrorWithMessage("no target entity from nlp"))
     targetEntityNameOpt <- targetEntity.tag match {
-                             case E_TYPE => targetEntity.findFirstNamedValue.pure[F]
+                             case E_TYPE => targetEntity.value.some.pure[F]
                              case A_TYPE =>
-                               targetEntity.findFirstNamedValue.traverse(v =>
-                                 domainSchema.getThingByAttribute(domain)(v)
-                               )
-                             case _      => domainSchema.getThingByAttribute(domain)(targetEntity.tag).map(_.some)
+                               targetEntity.value.some.traverse(v => domainSchema.getTableByColumn(domain)(v))
+                             case _      => domainSchema.getTableByColumn(domain)(targetEntity.tag).map(_.some)
                            }
     targetEntityName    <-
       Sync[F].fromOption(targetEntityNameOpt, ServerErrorWithMessage("no selected value for target entity"))
   } yield targetEntityName
 
   private def getTargetAttrName(
-      targetOpt: Option[ClarifiedNamedEntity],
+      targetOpt: Option[EnrichedNamedEntity],
       domain: Domain
   ): F[String] = for {
-    targetEntity        <- Sync[F].fromOption(targetOpt, ServerErrorWithMessage("no target entity from nlp"))
-    targetEntityNameOpt <- targetEntity.tag match {
-                             case E_TYPE =>
-                               targetEntity.findFirstNamedValue.traverse { v =>
-                                 domainSchema.thingKeys(domain).map(_.getOrElse(v, v))
-                               }
-                             case _      => targetEntity.findFirstNamedValue.pure[F]
-                           }
-    targetAttrName      <-
-      Sync[F].fromOption(targetEntityNameOpt, ServerErrorWithMessage("no selected value for target attr"))
+    targetEntity   <- Sync[F].fromOption(targetOpt, ServerErrorWithMessage("no target entity from nlp"))
+    targetAttrName <- targetEntity.tag match {
+                        case E_TYPE =>
+                          domainSchema.thingKeys(domain).map(_.getOrElse(targetEntity.value, targetEntity.value))
+                        case _      => targetEntity.value.pure[F]
+                      }
   } yield targetAttrName
 
 }

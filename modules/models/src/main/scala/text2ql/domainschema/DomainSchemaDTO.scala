@@ -6,51 +6,44 @@ import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import sttp.tapir.Schema
 
 final case class DomainSchemaDTO(
-    vertices: List[DomainSchemaVertex],
-    edges: List[DomainSchemaEdge],
-    attributes: List[DomainSchemaAttribute]
+    tables: List[DomainSchemaTable],
+    relations: List[DomainSchemaRelation],
+    columns: List[DomainSchemaColumn]
 )
 
-final case class DomainSchemaVertex(
-    vertexName: String,
-    title: String,
-    alternatives: Option[String],
-    parent: Option[String],
+final case class DomainSchemaTable(
+    tableName: String,
+    russianNames: List[String],
     key: String,
     header: String,
     from: String,
-    select: String,
-    where: Option[String],
-    join: Option[String],
-    groupBy: Option[String],
-    having: Option[String],
-    orderBy: Option[String]
+    select: String
 )
 
-final case class DomainSchemaAttribute(
-    vertexName: String,
-    attributeName: String,
-    attributeValue: String,
-    attributeType: String,
-    title: String
+final case class DomainSchemaColumn(
+    tableName: String,
+    columnName: String,
+    columnValue: String,
+    columnType: String,
+    russianNames: List[String]
 )
 
-final case class DomainSchemaEdge(
+final case class DomainSchemaRelation(
     from: String,
     to: String,
     fromKey: String,
     toKey: String
 )
 
-object DomainSchemaVertex {
-  implicit val config: Configuration              = Configuration.default.withSnakeCaseMemberNames
-  implicit val codec: Codec[DomainSchemaVertex]   = deriveConfiguredCodec
-  implicit val schema: Schema[DomainSchemaVertex] = Schema.derived
+object DomainSchemaTable {
+  implicit val config: Configuration             = Configuration.default.withSnakeCaseMemberNames
+  implicit val codec: Codec[DomainSchemaTable]   = deriveConfiguredCodec
+  implicit val schema: Schema[DomainSchemaTable] = Schema.derived
 }
 
 object DomainSchemaDTO {
-  implicit val config: Configuration                        = Configuration.default.withSnakeCaseMemberNames
-  implicit val attributeCodec: Codec[DomainSchemaAttribute] = deriveConfiguredCodec
-  implicit val edgeCodec: Codec[DomainSchemaEdge]           = deriveConfiguredCodec
-  implicit val codec: Codec[DomainSchemaDTO]                = deriveConfiguredCodec
+  implicit val config: Configuration                     = Configuration.default.withSnakeCaseMemberNames
+  implicit val attributeCodec: Codec[DomainSchemaColumn] = deriveConfiguredCodec
+  implicit val edgeCodec: Codec[DomainSchemaRelation]    = deriveConfiguredCodec
+  implicit val codec: Codec[DomainSchemaDTO]             = deriveConfiguredCodec
 }

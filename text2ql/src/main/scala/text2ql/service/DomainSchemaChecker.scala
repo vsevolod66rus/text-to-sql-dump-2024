@@ -5,9 +5,8 @@ import cats.implicits._
 import fs2.{Stream, text}
 import org.typelevel.log4cats.Logger
 import text2ql.api._
-import text2ql.configs.{DBDataConfig, TypeDBConfig}
+import text2ql.configs.DBDataConfig
 import text2ql.domainschema.CheckDomainSchemaResponse
-import text2ql.dao.typedb._
 import text2ql.dao.postgres.{DomainRepo, QueryBuilder, QueryManager, ResponseBuilder}
 import text2ql.service.DomainSchemaService._
 
@@ -38,7 +37,6 @@ object DomainSchemaChecker {
     rb                    <- ResponseBuilder[F](domainSchemaServ)
     repo                  <- DomainRepo[F](qb, qm, rb)
 
-
   } yield new DomainSchemaCheckerImpl[F](queryDataCalc, repo, domainSchemaServ, qb)
 }
 
@@ -52,7 +50,7 @@ class DomainSchemaCheckerImpl[F[+_]: Async](
   def baseCheck(domain: Domain, content: Stream[F, Byte]): F[List[CheckDomainSchemaResponse]] = for {
     _             <- content.through(text.utf8.decode).compile.string.flatMap(domainSchema.update(domain, _))
     entityNames   <- domainSchema.vertices(domain).map(_.keySet.toList)
-    samples        = buildClarifiedEntities(entityNames.map(List(_)))
+    samples        = buildEnrichedEntities(entityNames.map(List(_)))
     queryDataList <- samples.traverse(e => queryDataCalculator.prepareDataForQuery(e, baseUserReq, domain))
     res           <- askQueries(queryDataList)
   } yield res
@@ -68,7 +66,7 @@ class DomainSchemaCheckerImpl[F[+_]: Async](
                              if (entities.nonEmpty) lst.filter(entities.contains) else lst
                            }
     entitiesSeq          = if (onlySet) List(entityNames) else (1 to entityNames.size).flatMap(entityNames.combinations).toList
-    samples              = buildClarifiedEntities(entitiesSeq)
+    samples              = buildEnrichedEntities(entitiesSeq)
     queryDataListEither <- samples.traverse { entities =>
                              queryDataCalculator.prepareDataForQuery(entities, baseUserReq, domain).attempt
                            }
@@ -83,15 +81,13 @@ class DomainSchemaCheckerImpl[F[+_]: Async](
     chat = AddChatMessageRequestModel(message = "", requestId = UUID.randomUUID())
   )
 
-  private def buildClarifiedEntities(entitiesList: List[List[String]]): List[List[ClarifiedNamedEntity]] =
+  private def buildEnrichedEntities(entitiesList: List[List[String]]): List[List[EnrichedNamedEntity]] =
     entitiesList.map { names =>
       names.map { e =>
-        ClarifiedNamedEntity(
+        EnrichedNamedEntity(
           tag = E_TYPE,
-          originalValue = e,
-          start = 0,
-          namedValues = List(e),
-          attributeSelected = None,
+          token = e,
+          value = e,
           isTarget = names.headOption.contains(e)
         )
       }
@@ -106,8 +102,7 @@ class DomainSchemaCheckerImpl[F[+_]: Async](
                               .generalQuery(queryData)
                               .attempt
                               .map(_.map(_.custom.flatMap(_.grid).get).leftMap(_.getMessage))
-        entities          = queryData.entityList.map(_.entityName)
-        relations         = queryData.relationList.map(_.relationName)
-      } yield CheckDomainSchemaResponse(entities, relations, buildQueryDTO, res)
+        entities          = queryData.tables.map(_.tableName)
+      } yield CheckDomainSchemaResponse(entities, buildQueryDTO, res)
     }
 }

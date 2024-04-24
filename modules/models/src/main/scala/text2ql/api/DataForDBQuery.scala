@@ -3,47 +3,35 @@ package text2ql.api
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 import sttp.tapir.Schema
-import text2ql.domainschema.DomainSchemaVertex
+import text2ql.domainschema.DomainSchemaTable
 
 import java.util.UUID
 
 case class DataForDBQuery(
     requestId: UUID,
     domain: Domain,
-    entityList: List[EntityForDBQuery],
-    relationList: List[RelationForDBQuery],
+    tables: List[DBQueryTable],
     pagination: Option[ChatMessageRequestModel] = None,
     properties: DBQueryProperties
 )
 
-case class EntityForDBQuery(
-    entityName: String,
-    schema: DomainSchemaVertex,
-    attributes: List[AttributeForDBQuery] = List.empty[AttributeForDBQuery],
+case class DBQueryTable(
+    tableName: String,
+    tableSchema: DomainSchemaTable,
+    attributes: List[DBQueryColumn],
     isTargetEntity: Boolean = false
 )
 
-case class RelationForDBQuery(
-    relationName: String,
-    attributes: List[AttributeForDBQuery] = List.empty[AttributeForDBQuery],
-    entities: List[String]
-)
-
-case class AttributeForDBQuery(
-    attributeName: String,
-    attributeValues: List[AttributeValue] = List.empty,
+case class DBQueryColumn(
+    tableName: String,
+    filterValues: List[DbQueryFilterValue],
     isTargetAttribute: Boolean = false
 )
 
-case class AttributeValue(
+case class DbQueryFilterValue(
     value: String,
     comparisonOperator: String,
     joinValuesWithOr: Boolean = true
-)
-
-case class ThingWithOriginalName(
-    originalName: String,
-    thingName: String
 )
 
 case class DBQueryProperties(
@@ -58,24 +46,19 @@ object DataForDBQuery {
   implicit val schema: Schema[DataForDBQuery] = Schema.derived
 }
 
-object EntityForDBQuery {
-  implicit val codec: Codec[EntityForDBQuery]   = deriveCodec
-  implicit val schema: Schema[EntityForDBQuery] = Schema.derived
+object DBQueryTable {
+  implicit val codec: Codec[DBQueryTable]   = deriveCodec
+  implicit val schema: Schema[DBQueryTable] = Schema.derived
 }
 
-object RelationForDBQuery {
-  implicit val codec: Codec[RelationForDBQuery]   = deriveCodec
-  implicit val schema: Schema[RelationForDBQuery] = Schema.derived
+object DBQueryColumn {
+  implicit val codec: Codec[DBQueryColumn]   = deriveCodec
+  implicit val schema: Schema[DBQueryColumn] = Schema.derived
 }
 
-object AttributeForDBQuery {
-  implicit val codec: Codec[AttributeForDBQuery]   = deriveCodec
-  implicit val schema: Schema[AttributeForDBQuery] = Schema.derived
-}
-
-object AttributeValue {
-  implicit val codec: Codec[AttributeValue]   = deriveCodec
-  implicit val schema: Schema[AttributeValue] = Schema.derived
+object DbQueryFilterValue {
+  implicit val codec: Codec[DbQueryFilterValue]   = deriveCodec
+  implicit val schema: Schema[DbQueryFilterValue] = Schema.derived
 }
 
 object DBQueryProperties {

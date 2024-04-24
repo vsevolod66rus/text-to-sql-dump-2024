@@ -31,8 +31,8 @@ case class GridPropertyValueBoolean(value: Boolean) extends GridPropertyValue
 case class GridPropertyValueInstant(value: Instant) extends GridPropertyValue
 
 case class GridWithDataRenderTypeResponseModel(
-    properties: List[GridPropertyItemModel] = List.empty,
-    items: List[Map[String, GridPropertyValue]] = List.empty,
+    properties: List[GridPropertyItemModel],
+    items: List[Map[String, GridPropertyValue]],
     total: Long = 0L
 )
 

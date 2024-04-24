@@ -1,229 +1,199 @@
-vertices:
-  - title: Регион
-    vertex_name: region
-    from: regions
-    group_by: null
-    having: null
-    join: null
-    order_by: null
-    where: null
-    select: '*'
+tables:
+  - table_name: employees
+    russian_names: [ Сотрудник, рабочий, трудящийся ]
     key: id
     header: name
-  - title: Город
-    vertex_name: city
-    from: cities
-    group_by: null
-    having: null
-    join: null
-    order_by: null
-    where: null
-    select: '*'
-    key: id
-    header: name
-  - title: Локация (офис)
-    vertex_name: location
-    from: locations
-    group_by: null
-    having: null
-    join: null
-    order_by: null
-    where: null
-    select: '*'
-    key: id
-    header: name
-  - title: Департамент
-    vertex_name: department
-    from: departments
-    group_by: null
-    having: null
-    join: null
-    order_by: null
-    where: null
-    select: '*'
-    key: id
-    header: name
-  - title: Рабочая функция
-    vertex_name: job_function
-    from: job_functions
-    group_by: null
-    having: null
-    join: null
-    order_by: null
-    where: null
-    select: '*'
-    key: id
-    header: name
-  - title: Должность
-    vertex_name: job
-    from: jobs
-    group_by: null
-    having: null
-    join: null
-    order_by: null
-    where: null
-    select: '*'
-    key: id
-    header: name
-  - title: Сотрудник
-    vertex_name: employee
     from: employees
-    group_by: null
-    having: null
-    join: null
-    order_by: null
-    where: fired is false
     select: '*'
+  - table_name: departments
+    russian_names: [ Департамент, отдел, подразделение ]
     key: id
     header: name
-attributes:
-  - vertex_name: region
-    attribute_name: region_id
-    attribute_type: string
-    attribute_value: id
-    title: Идентификатор региона
-  - vertex_name: region
-    attribute_name: region_code
-    attribute_type: string
-    attribute_value: code
-    title: Код региона
-  - vertex_name: region
-    attribute_name: region_name
-    attribute_type: string
-    attribute_value: name
-    title: Имя региона
-  - vertex_name: city
-    attribute_name: city_id
-    attribute_type: string
-    attribute_value: id
-    title: Идентификатор города
-  - vertex_name: city
-    attribute_name: city_code
-    attribute_type: string
-    attribute_value: code
-    title: Код города
-  - vertex_name: city
-    attribute_name: city_name
-    attribute_type: string
-    attribute_value: name
-    title: Имя города
-  - vertex_name: city
-    attribute_name: city_id
-    attribute_type: string
-    attribute_value: id
-    title: Идентификатор локации
-  - vertex_name: location
-    attribute_name: location_code
-    attribute_type: string
-    attribute_value: code
-    title: Код локации
-  - vertex_name: location
-    attribute_name: location_name
-    attribute_type: string
-    attribute_value: name
-    title: Имя локации
-  - vertex_name: department
-    attribute_name: department_id
-    attribute_type: string
-    attribute_value: id
-    title: Идентификатор департамента
-  - vertex_name: department
-    attribute_name: department_code
-    attribute_type: string
-    attribute_value: code
-    title: Код департамента
-  - vertex_name: department
-    attribute_name: department_name
-    attribute_type: string
-    attribute_value: name
-    title: Имя департамента
-  - vertex_name: department
-    attribute_name: department_path
-    attribute_type: string
-    attribute_value: path
-    title: Отношения подчиненности департамента
-  - vertex_name: job_function
-    attribute_name: job_function_id
-    attribute_type: string
-    attribute_value: id
-    title: Идентификатор функции
-  - vertex_name: job_function
-    attribute_name: job_function_code
-    attribute_type: string
-    attribute_value: code
-    title: Код функции
-  - vertex_name: job_function
-    attribute_name: job_function_name
-    attribute_type: string
-    attribute_value: name
-    title: Имя функции
-  - vertex_name: job
-    attribute_name: job_id
-    attribute_type: string
-    attribute_value: id
-    title: Идентификатор должности
-  - vertex_name: job
-    attribute_name: job_code
-    attribute_type: string
-    attribute_value: code
-    title: Код дожности
-  - vertex_name: job
-    attribute_name: job_name
-    attribute_type: string
-    attribute_value: name
-    title: Наименование должности
-  - vertex_name: employee
-    attribute_name: employee_id
-    attribute_type: string
-    attribute_value: id
-    title: Идентификатор сотрудника
-  - vertex_name: employee
-    attribute_name: employee_name
-    attribute_type: string
-    attribute_value: name
-    title: Имя сотрудника
-  - vertex_name: employee
-    attribute_name: employee_gender
-    attribute_type: boolean
-    attribute_value: gender
-    title: Пол сотрудника
-  - vertex_name: employee
-    attribute_name: employee_email
-    attribute_type: string
-    attribute_value: email
-    title: Почта сотрудника
-  - vertex_name: employee
-    attribute_name: employee_hired_date
-    attribute_type: datetime
-    attribute_value: hired_date
-    title: Дата найма сотрудника
-  - vertex_name: employee
-    attribute_name: employee_fired_date
-    attribute_type: datetime
-    attribute_value: fired_date
-    title: Дата увольнения сотрудника
-edges:
-  - from: region
-    to: city
-    from_key: id
-    to_key: region_id
-  - from: city
-    to: location
-    from_key: id
-    to_key: city_id
-  - from: location
-    to: department
-    from_key: id
-    to_key: location_id
-  - from: job_function
-    to: job
-    from_key: id
-    to_key: function_id
-  - from: department
-    to: employee
+    from: departments
+    select: '*'
+  - table_name: countries
+    russian_names: [ Страна, государство ]
+    key: id
+    header: name
+    from: countries
+    select: '*'
+  - table_name: cities
+    russian_names: [ Город,населенный пункт ]
+    key: id
+    header: name
+    from: cities
+    select: '*'
+  - table_name: jobs
+    russian_names: [ Должность, профессия ]
+    key: id
+    header: name
+    from: jobs
+    select: '*'
+  - table_name: job_functions
+    russian_names: [ Рабочая функция, функция ]
+    key: id
+    header: name
+    from: job_functions
+    select: '*'
+columns:
+  - table_name: employees
+    russian_names: [ Почта сотрудника, емейл ]
+    column_name: employees_email
+    column_value: email
+    column_type: string
+  - table_name: employees
+    russian_names: [ Дата устройства на работу ]
+    column_name: employees_hired_date
+    column_value: hired_date
+    column_type: datetime
+  - table_name: employees
+    russian_names: [ Внутренний id сотрудника ]
+    column_name: employees_id
+    column_value: id
+    column_type: string
+  - table_name: employees
+    russian_names: [ Ссылка на должность ]
+    column_name: employees_job_id
+    column_value: job_id
+    column_type: string
+  - table_name: employees
+    russian_names: [ Ссылка на департамент ]
+    column_name: employees_department_id
+    column_value: department_id
+    column_type: string
+  - table_name: employees
+    russian_names: [ Пол сотрудника,гендер ]
+    column_name: employees_gender
+    column_value: gender
+    column_type: string
+  - table_name: employees
+    russian_names: [ Возраст сотрудника ]
+    column_name: employees_age
+    column_value: age
+    column_type: long
+  - table_name: employees
+    russian_names: [ Рост сотрудника ]
+    column_name: employees_height
+    column_value: height
+    column_type: long
+  - table_name: employees
+    russian_names: [ Полное имя сотрудника,имя ]
+    column_name: employees_full_name
+    column_value: full_name
+    column_type: string
+  - table_name: employees
+    russian_names: [ Гражданство сотрудника ]
+    column_name: employees_citizenship
+    column_value: citizenship
+    column_type: string
+  - table_name: employees
+    russian_names: [ Зарплата сотрудника (руб/мес) ]
+    column_name: employees_salary
+    column_value: salary
+    column_type: double
+  - table_name: employees
+    russian_names: [ 'Уволен?' ]
+    column_name: employees_fired
+    column_value: fired
+    column_type: boolean
+  - table_name: employees
+    russian_names: [ Дата увольнения сотрудника ]
+    column_name: employees_fired_date
+    column_value: fired_date
+    column_type: datetime
+  - table_name: employees
+    russian_names: [ Ссылка на начальника ]
+    column_name: employees_parent_id
+    column_value: parent_id
+    column_type: string
+  - table_name: countries
+    russian_names: [ Внутренний id страны ]
+    column_name: countries_id
+    column_value: id
+    column_type: string
+  - table_name: countries
+    russian_names: [ Страна, название страны, государство ]
+    column_name: countries_name
+    column_value: name
+    column_type: string
+  - table_name: cities
+    russian_names: [ Внутренний id города ]
+    column_name: cities_id
+    column_value: id
+    column_type: string
+  - table_name: cities
+    russian_names: [ Ссылка на внутренний id страны ]
+    column_name: cities_country_id
+    column_value: country_id
+    column_type: string
+  - table_name: cities
+    russian_names: [ Город ]
+    column_name: cities_name
+    column_value: name
+    column_type: string
+  - table_name: departments
+    russian_names: [ Внутренний id департамента ]
+    column_name: departments_id
+    column_value: id
+    column_type: string
+  - table_name: departments
+    russian_names: [ Ссылка на id города ]
+    column_name: departments_city_id
+    column_value: city_id
+    column_type: string
+  - table_name: departments
+    russian_names: [ Департамент ]
+    column_name: departments_name
+    column_value: name
+    column_type: string
+  - table_name: departments
+    russian_names: [ Ссылка на руководящий департамент ]
+    column_name: departments_parent_id
+    column_value: parent_id
+    column_type: string
+  - table_name: job_functions
+    russian_names: [ Внутренний id функции ]
+    column_name: job_functions_id
+    column_value: id
+    column_type: string
+  - table_name: job_functions
+    russian_names: [ Рабочая функция,функция ]
+    column_name: job_functions_name
+    column_value: name
+    column_type: string
+  - table_name: jobs
+    russian_names: [ Внутренний id должности ]
+    column_name: jobs_id
+    column_value: id
+    column_type: string
+  - table_name: jobs
+    russian_names: [ Ссылка на рабочую функцию ]
+    column_name: jobs_function_id
+    column_value: function_id
+    column_type: string
+  - table_name: jobs
+    russian_names: [ Должность,профессия, работа ]
+    column_name: jobs_name
+    column_value: name
+    column_type: string
+relations:
+  - from: departments
+    to: employees
     from_key: id
     to_key: department_id
-  - from: job
-    to: employee
+  - from: jobs
+    to: employees
     from_key: id
     to_key: job_id
+  - from: countries
+    to: cities
+    from_key: id
+    to_key: country_id
+  - from: cities
+    to: departments
+    from_key: id
+    to_key: city_id
+  - from: job_functions
+    to: jobs
+    from_key: id
+    to_key: function_id

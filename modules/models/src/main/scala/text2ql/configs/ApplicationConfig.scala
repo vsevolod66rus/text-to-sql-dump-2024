@@ -4,8 +4,7 @@ import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
 case class ApplicationConfig(
-    database: DBConfig,
-    typeDB: TypeDBConfig
+    database: DBConfig
 )
 
 object ApplicationConfig {

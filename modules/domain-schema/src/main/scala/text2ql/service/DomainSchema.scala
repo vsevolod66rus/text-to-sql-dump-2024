@@ -4,17 +4,17 @@ import cats.effect._
 import cats.implicits._
 import io.circe.yaml.{parser => yamlParser}
 import text2ql.api.Domain
-import text2ql.domainschema.{DomainSchemaAttribute, DomainSchemaDTO, DomainSchemaEdge, DomainSchemaVertex}
+import text2ql.domainschema.{DomainSchemaColumn, DomainSchemaDTO, DomainSchemaRelation, DomainSchemaTable}
 import text2ql.error.ServerError.ServerErrorWithMessage
 import text2ql.service.DomainSchema.DomainSchemaInternal
 
 trait DomainSchema[F[_]] {
   def update(domainSchema: String): F[Unit]
-  def schemaAttributesType: F[Map[String, String]]
-  def vertices: F[Map[String, DomainSchemaVertex]]
-  def attributesTitle: F[Map[String, String]]
+  def tables: F[Map[String, DomainSchemaTable]]
+  def relations: F[List[DomainSchemaRelation]]
+  def types: F[Map[String, String]]
+  def titles: F[Map[String, String]]
   def sqlNames: F[Map[String, String]]
-  def edges: F[List[DomainSchemaEdge]]
   def thingKeys: F[Map[String, String]]
   def thingKeysSQL: F[Map[String, String]]
   def thingAttributes: F[Map[String, Set[String]]]
@@ -35,44 +35,44 @@ object DomainSchema {
 
   final class DomainSchemaInternal(domainSchemaDTO: DomainSchemaDTO) {
 
-    lazy val vertices: Map[String, DomainSchemaVertex] = domainSchemaDTO.vertices.map(v => v.vertexName -> v).toMap
+    lazy val vertices: Map[String, DomainSchemaTable] = domainSchemaDTO.tables.map(v => v.tableName -> v).toMap
 
-    lazy val attributes: Seq[DomainSchemaAttribute] = domainSchemaDTO.attributes
+    lazy val attributes: Seq[DomainSchemaColumn] = domainSchemaDTO.columns
 
-    lazy val attributesTypeMap: Map[String, String] = makeMapFromAttrs(a => a.attributeName -> a.attributeType)
+    lazy val attributesTypeMap: Map[String, String] = makeMapFromColumns(a => a.columnName -> a.columnType)
 
-    lazy val attributesTitleMap: Map[String, String] =
-      makeMapFromAttrs(a => a.attributeName -> a.title) ++
-        makeMapFromThings(th => th.vertexName -> th.title)
+    lazy val titlesMap: Map[String, String] =
+      makeMapFromColumns(a => a.columnName -> a.russianNames.headOption.getOrElse(a.columnName)) ++
+        makeMapFromTables(th => th.tableName -> th.russianNames.headOption.getOrElse(th.tableName))
 
-    lazy val sqlNames: Map[String, String]           = makeMapFromAttrs(a => a.attributeName -> a.attributeValue)
+    lazy val sqlNames: Map[String, String]  = makeMapFromColumns(a => a.columnName -> a.columnValue)
 
-    lazy val edges: List[DomainSchemaEdge] = domainSchemaDTO.edges
+    lazy val relations: List[DomainSchemaRelation] = domainSchemaDTO.relations
 
-    lazy val thingKeys: Map[String, String] = makeMapFromThings(th =>
-      th.vertexName -> domainSchemaDTO.attributes
-        .filter(_.vertexName == th.vertexName)
-        .find(_.attributeValue == th.key)
-        .map(_.attributeName)
+    lazy val thingKeys: Map[String, String] = makeMapFromTables(th =>
+      th.tableName -> domainSchemaDTO.columns
+        .filter(_.tableName == th.tableName)
+        .find(_.columnValue == th.key)
+        .map(_.columnName)
         .getOrElse(th.key)
     )
 
     lazy val thingKeysSQL: Map[String, String] =
-      domainSchemaDTO.vertices.map { vertex =>
+      domainSchemaDTO.tables.map { vertex =>
         val value = sqlNames.getOrElse(vertex.key, vertex.key)
-        vertex.vertexName -> value
+        vertex.tableName -> value
       }.toMap
 
-    lazy val thingAttributes: Map[String, Set[String]] =
-      domainSchemaDTO.attributes.groupBy(_.vertexName).map { case (thing, attrs) =>
-        thing -> attrs.map(_.attributeName).toSet
+    lazy val tableColumnNames: Map[String, Set[String]] =
+      domainSchemaDTO.columns.groupBy(_.tableName).map { case (thing, attrs) =>
+        thing -> attrs.map(_.columnName).toSet
       }
 
-    private def makeMapFromThings[K, V](f: DomainSchemaVertex => (K, V)): Map[K, V] =
-      domainSchemaDTO.vertices.map(f).toMap
+    private def makeMapFromTables[K, V](f: DomainSchemaTable => (K, V)): Map[K, V] =
+      domainSchemaDTO.tables.map(f).toMap
 
-    private def makeMapFromAttrs[K, V](f: DomainSchemaAttribute => (K, V)): Map[K, V] =
-      domainSchemaDTO.attributes.map(f).toMap
+    private def makeMapFromColumns[K, V](f: DomainSchemaColumn => (K, V)): Map[K, V] =
+      domainSchemaDTO.columns.map(f).toMap
 
   }
 }
@@ -91,12 +91,12 @@ final class DomainSchemaImpl[F[_]: Async](domainSchemaRef: Ref[F, Option[DomainS
     _               <- domainSchemaRef.set(Some(new DomainSchemaInternal(newDomainSchema)))
   } yield ()
 
-  override val vertices: F[Map[String, DomainSchemaVertex]] = domainSchema.map(_.vertices)
-  override val schemaAttributesType: F[Map[String, String]] = domainSchema.map(_.attributesTypeMap)
-  override val attributesTitle: F[Map[String, String]]      = domainSchema.map(_.attributesTitleMap)
+  override val tables: F[Map[String, DomainSchemaTable]]    = domainSchema.map(_.vertices)
+  override val types: F[Map[String, String]]                = domainSchema.map(_.attributesTypeMap)
+  override val titles: F[Map[String, String]]               = domainSchema.map(_.titlesMap)
   override val sqlNames: F[Map[String, String]]             = domainSchema.map(_.sqlNames)
-  override val edges: F[List[DomainSchemaEdge]]             = domainSchema.map(_.edges)
+  override val relations: F[List[DomainSchemaRelation]]     = domainSchema.map(_.relations)
   override val thingKeys: F[Map[String, String]]            = domainSchema.map(_.thingKeys)
   override val thingKeysSQL: F[Map[String, String]]         = domainSchema.map(_.thingKeysSQL)
-  override val thingAttributes: F[Map[String, Set[String]]] = domainSchema.map(_.thingAttributes)
+  override val thingAttributes: F[Map[String, Set[String]]] = domainSchema.map(_.tableColumnNames)
 }

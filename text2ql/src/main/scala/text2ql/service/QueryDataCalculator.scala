@@ -7,9 +7,9 @@ import text2ql.api._
 trait QueryDataCalculator[F[_]] {
 
   def prepareDataForQuery(
-      clarifiedEntities: List[ClarifiedNamedEntity],
-      userRequest: ChatMessageRequestModel,
-      domain: Domain
+                           enrichedEntities: List[EnrichedNamedEntity],
+                           userRequest: ChatMessageRequestModel,
+                           domain: Domain
   ): F[DataForDBQuery]
 }
 
@@ -28,25 +28,24 @@ class QueryDataCalculatorImpl[F[+_]: Async](
 ) extends QueryDataCalculator[F] {
 
   override def prepareDataForQuery(
-      clarifiedEntities: List[ClarifiedNamedEntity],
-      userRequest: ChatMessageRequestModel,
-      domain: Domain
+                                    enrichedEntities: List[EnrichedNamedEntity],
+                                    userRequest: ChatMessageRequestModel,
+                                    domain: Domain
   ): F[DataForDBQuery] =
     for {
-      reqProperties      <- requestTypeCalculator.calculateDBQueryProperties(clarifiedEntities, domain)
+      reqProperties      <- requestTypeCalculator.calculateDBQueryProperties(enrichedEntities, domain)
       requestId           = userRequest.chat.requestId
       initialDataForQuery = DataForDBQuery(
                               requestId = requestId,
-                              entityList = List.empty[EntityForDBQuery],
-                              relationList = List.empty[RelationForDBQuery],
+                              tables = List.empty[DBQueryTable],
                               properties = reqProperties,
                               pagination = userRequest.some,
                               domain = domain
                             )
-      nonEmptySlots       = clarifiedEntities.map(_.tag)
+      nonEmptySlots       = enrichedEntities.map(_.tag)
       dataForQuery       <-
         nonEmptySlots.foldLeftM(initialDataForQuery) { (acc, el) =>
-          updater.updateDataForDBQuery(acc, clarifiedEntities, domain, el)
+          updater.updateDataForDBQuery(acc, enrichedEntities, domain, el)
         }
       withVisualization   = calculateVisualization(dataForQuery)
     } yield withVisualization
@@ -56,11 +55,7 @@ class QueryDataCalculatorImpl[F[+_]: Async](
       nAttributesLimit: Int = 50
   ): DataForDBQuery = {
     val visualization = {
-      val visualization =
-        List(
-          queryData.entityList.flatMap(_.attributes),
-          queryData.relationList.flatMap(_.attributes)
-        ).flatten.map(_.attributeName)
+      val visualization = queryData.tables.flatMap(_.attributes.map(_.tableName))
       visualization.take(nAttributesLimit)
     }
     val updatedLogic = queryData.properties.copy(visualization = visualization)
