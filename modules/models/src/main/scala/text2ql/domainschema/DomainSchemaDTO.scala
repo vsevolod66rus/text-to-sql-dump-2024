@@ -42,8 +42,8 @@ object DomainSchemaTable {
 }
 
 object DomainSchemaDTO {
-  implicit val config: Configuration                     = Configuration.default.withSnakeCaseMemberNames
-  implicit val attributeCodec: Codec[DomainSchemaColumn] = deriveConfiguredCodec
-  implicit val edgeCodec: Codec[DomainSchemaRelation]    = deriveConfiguredCodec
-  implicit val codec: Codec[DomainSchemaDTO]             = deriveConfiguredCodec
+  implicit val config: Configuration                      = Configuration.default.withSnakeCaseMemberNames
+  implicit val columnsCodec: Codec[DomainSchemaColumn]    = deriveConfiguredCodec
+  implicit val relationCodec: Codec[DomainSchemaRelation] = deriveConfiguredCodec
+  implicit val codec: Codec[DomainSchemaDTO]              = deriveConfiguredCodec
 }

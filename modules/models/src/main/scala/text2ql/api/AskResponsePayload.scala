@@ -10,8 +10,7 @@ import java.time.Instant
 import scala.util.Try
 
 case class AskResponsePayload(
-    grid: Option[GridWithDataRenderTypeResponseModel] = None,
-    pagination: Option[ChatMessageRequestModel] = None
+    grid: GridWithDataRenderTypeResponseModel
 )
 
 sealed trait GridPropertyDataType
@@ -33,7 +32,7 @@ case class GridPropertyValueInstant(value: Instant) extends GridPropertyValue
 case class GridWithDataRenderTypeResponseModel(
     properties: List[GridPropertyItemModel],
     items: List[Map[String, GridPropertyValue]],
-    total: Long = 0L
+    total: Long
 )
 
 case class GridPropertyItemModel(

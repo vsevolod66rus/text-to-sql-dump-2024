@@ -15,9 +15,8 @@ trait DomainSchema[F[_]] {
   def types: F[Map[String, String]]
   def titles: F[Map[String, String]]
   def sqlNames: F[Map[String, String]]
-  def thingKeys: F[Map[String, String]]
-  def thingKeysSQL: F[Map[String, String]]
-  def thingAttributes: F[Map[String, Set[String]]]
+  def tableKeys: F[Map[String, String]]
+  def tableColumns: F[Map[String, Set[String]]]
 }
 
 object DomainSchema {
@@ -35,11 +34,11 @@ object DomainSchema {
 
   final class DomainSchemaInternal(domainSchemaDTO: DomainSchemaDTO) {
 
-    lazy val vertices: Map[String, DomainSchemaTable] = domainSchemaDTO.tables.map(v => v.tableName -> v).toMap
+    lazy val tables: Map[String, DomainSchemaTable] = domainSchemaDTO.tables.map(v => v.tableName -> v).toMap
 
-    lazy val attributes: Seq[DomainSchemaColumn] = domainSchemaDTO.columns
+    lazy val columns: Seq[DomainSchemaColumn] = domainSchemaDTO.columns
 
-    lazy val attributesTypeMap: Map[String, String] = makeMapFromColumns(a => a.columnName -> a.columnType)
+    lazy val columnsTypeMap: Map[String, String] = makeMapFromColumns(a => a.columnName -> a.columnType)
 
     lazy val titlesMap: Map[String, String] =
       makeMapFromColumns(a => a.columnName -> a.russianNames.headOption.getOrElse(a.columnName)) ++
@@ -49,19 +48,13 @@ object DomainSchema {
 
     lazy val relations: List[DomainSchemaRelation] = domainSchemaDTO.relations
 
-    lazy val thingKeys: Map[String, String] = makeMapFromTables(th =>
+    lazy val tableKeysAliases: Map[String, String] = makeMapFromTables(th =>
       th.tableName -> domainSchemaDTO.columns
         .filter(_.tableName == th.tableName)
         .find(_.columnValue == th.key)
         .map(_.columnName)
         .getOrElse(th.key)
     )
-
-    lazy val thingKeysSQL: Map[String, String] =
-      domainSchemaDTO.tables.map { vertex =>
-        val value = sqlNames.getOrElse(vertex.key, vertex.key)
-        vertex.tableName -> value
-      }.toMap
 
     lazy val tableColumnNames: Map[String, Set[String]] =
       domainSchemaDTO.columns.groupBy(_.tableName).map { case (thing, attrs) =>
@@ -91,12 +84,11 @@ final class DomainSchemaImpl[F[_]: Async](domainSchemaRef: Ref[F, Option[DomainS
     _               <- domainSchemaRef.set(Some(new DomainSchemaInternal(newDomainSchema)))
   } yield ()
 
-  override val tables: F[Map[String, DomainSchemaTable]]    = domainSchema.map(_.vertices)
-  override val types: F[Map[String, String]]                = domainSchema.map(_.attributesTypeMap)
-  override val titles: F[Map[String, String]]               = domainSchema.map(_.titlesMap)
-  override val sqlNames: F[Map[String, String]]             = domainSchema.map(_.sqlNames)
-  override val relations: F[List[DomainSchemaRelation]]     = domainSchema.map(_.relations)
-  override val thingKeys: F[Map[String, String]]            = domainSchema.map(_.thingKeys)
-  override val thingKeysSQL: F[Map[String, String]]         = domainSchema.map(_.thingKeysSQL)
-  override val thingAttributes: F[Map[String, Set[String]]] = domainSchema.map(_.tableColumnNames)
+  override val tables: F[Map[String, DomainSchemaTable]] = domainSchema.map(_.tables)
+  override val types: F[Map[String, String]]             = domainSchema.map(_.columnsTypeMap)
+  override val titles: F[Map[String, String]]            = domainSchema.map(_.titlesMap)
+  override val sqlNames: F[Map[String, String]]          = domainSchema.map(_.sqlNames)
+  override val relations: F[List[DomainSchemaRelation]]  = domainSchema.map(_.relations)
+  override val tableKeys: F[Map[String, String]]         = domainSchema.map(_.tableKeysAliases)
+  override val tableColumns: F[Map[String, Set[String]]] = domainSchema.map(_.tableColumnNames)
 }

@@ -26,7 +26,6 @@ object Dependencies {
     lazy val sttpVersion             = "1.7.2"
     lazy val tapirVersion            = "1.5.0"
     lazy val chimneyVersion          = "0.6.1"
-    lazy val typeDBVersion           = "2.18.1"
     lazy val jmorphy2Version         = "0.2.0-SNAPSHOT"
     lazy val uuidCreatorVersion      = "3.7.3"
     lazy val scalaCacheVersion       = "1.0.0-M6"
@@ -154,8 +153,6 @@ object Dependencies {
   lazy val log4jSlf4jImpl = "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.13.3"
 
   lazy val logback = "ch.qos.logback" % "logback-classic" % logbackVersion % Runtime
-
-  lazy val typeDB = "com.vaticle.typedb" % "typedb-client" % typeDBVersion
 
   lazy val jmorphy2    = Seq(
     "company.evo.jmorphy2" % "jmorphy2-core",

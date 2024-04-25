@@ -49,7 +49,7 @@ class DomainSchemaCheckerImpl[F[+_]: Async](
 
   def baseCheck(domain: Domain, content: Stream[F, Byte]): F[List[CheckDomainSchemaResponse]] = for {
     _             <- content.through(text.utf8.decode).compile.string.flatMap(domainSchema.update(domain, _))
-    entityNames   <- domainSchema.vertices(domain).map(_.keySet.toList)
+    entityNames   <- domainSchema.tables(domain).map(_.keySet.toList)
     samples        = buildEnrichedEntities(entityNames.map(List(_)))
     queryDataList <- samples.traverse(e => queryDataCalculator.prepareDataForQuery(e, baseUserReq, domain))
     res           <- askQueries(queryDataList)
@@ -62,7 +62,7 @@ class DomainSchemaCheckerImpl[F[+_]: Async](
       content: Stream[F, Byte]
   ): F[List[CheckDomainSchemaResponse]] = for {
     _                   <- content.through(text.utf8.decode).compile.string.flatMap(domainSchema.update(domain, _))
-    entityNames         <- domainSchema.vertices(domain).map(_.keySet.toList).map { lst =>
+    entityNames         <- domainSchema.tables(domain).map(_.keySet.toList).map { lst =>
                              if (entities.nonEmpty) lst.filter(entities.contains) else lst
                            }
     entitiesSeq          = if (onlySet) List(entityNames) else (1 to entityNames.size).flatMap(entityNames.combinations).toList
@@ -75,8 +75,6 @@ class DomainSchemaCheckerImpl[F[+_]: Async](
   } yield res
 
   private val baseUserReq = ChatMessageRequestModel(
-    page = 0.some,
-    perPage = 10.some,
     sort = BaseSortModel(None, None),
     chat = AddChatMessageRequestModel(message = "", requestId = UUID.randomUUID())
   )
@@ -85,7 +83,7 @@ class DomainSchemaCheckerImpl[F[+_]: Async](
     entitiesList.map { names =>
       names.map { e =>
         EnrichedNamedEntity(
-          tag = E_TYPE,
+          tag = TABLE,
           token = e,
           value = e,
           isTarget = names.headOption.contains(e)
@@ -101,7 +99,7 @@ class DomainSchemaCheckerImpl[F[+_]: Async](
         res              <- askRepo
                               .generalQuery(queryData)
                               .attempt
-                              .map(_.map(_.custom.flatMap(_.grid).get).leftMap(_.getMessage))
+                              .map(_.map(_.custom.map(_.grid).get).leftMap(_.getMessage))
         entities          = queryData.tables.map(_.tableName)
       } yield CheckDomainSchemaResponse(entities, buildQueryDTO, res)
     }

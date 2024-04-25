@@ -7,12 +7,12 @@ ThisBuild / resolvers ++= Dependencies.Resolvers.resolvers
 lazy val commonSettings = Seq(
   addCompilerPlugin(Dependencies.kindProjector),
   addCompilerPlugin(Dependencies.betterMonadicFor),
-  scalafmtOnCompile             := true,
-  scalafixOnCompile             := true,
+  scalafmtOnCompile := true,
+  scalafixOnCompile := true,
   Global / onChangedBuildSource := ReloadOnSourceChanges,
-  Global / cancelable           := true,
-  Test / fork                   := true,
-  turbo                         := true,
+  Global / cancelable := true,
+  Test / fork := true,
+  turbo := true,
   scalacOptions ++= Seq(
     "-deprecation",               // Emit warning and location for usages of deprecated APIs.
     "-explaintypes",              // Explain type errors in more detail.
@@ -44,7 +44,6 @@ lazy val app = (project in file("text2ql"))
     name := "text2ql-app",
     libraryDependencies += Dependencies.logback,
     libraryDependencies += Dependencies.jclOverSlf4j,
-    libraryDependencies += Dependencies.typeDB,
     libraryDependencies += Dependencies.catsRetry
   )
   .settings(

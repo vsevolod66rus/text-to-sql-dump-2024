@@ -7,9 +7,9 @@ import text2ql.api._
 trait QueryDataCalculator[F[_]] {
 
   def prepareDataForQuery(
-                           enrichedEntities: List[EnrichedNamedEntity],
-                           userRequest: ChatMessageRequestModel,
-                           domain: Domain
+      enrichedEntities: List[EnrichedNamedEntity],
+      userRequest: ChatMessageRequestModel,
+      domain: Domain
   ): F[DataForDBQuery]
 }
 
@@ -28,9 +28,9 @@ class QueryDataCalculatorImpl[F[+_]: Async](
 ) extends QueryDataCalculator[F] {
 
   override def prepareDataForQuery(
-                                    enrichedEntities: List[EnrichedNamedEntity],
-                                    userRequest: ChatMessageRequestModel,
-                                    domain: Domain
+      enrichedEntities: List[EnrichedNamedEntity],
+      userRequest: ChatMessageRequestModel,
+      domain: Domain
   ): F[DataForDBQuery] =
     for {
       reqProperties      <- requestTypeCalculator.calculateDBQueryProperties(enrichedEntities, domain)
@@ -39,7 +39,6 @@ class QueryDataCalculatorImpl[F[+_]: Async](
                               requestId = requestId,
                               tables = List.empty[DBQueryTable],
                               properties = reqProperties,
-                              pagination = userRequest.some,
                               domain = domain
                             )
       nonEmptySlots       = enrichedEntities.map(_.tag)
@@ -52,11 +51,11 @@ class QueryDataCalculatorImpl[F[+_]: Async](
 
   private def calculateVisualization(
       queryData: DataForDBQuery,
-      nAttributesLimit: Int = 50
+      nColumnsLimit: Int = 50
   ): DataForDBQuery = {
     val visualization = {
-      val visualization = queryData.tables.flatMap(_.attributes.map(_.tableName))
-      visualization.take(nAttributesLimit)
+      val visualization = queryData.tables.flatMap(_.columns.map(_.columnName))
+      visualization.take(nColumnsLimit)
     }
     val updatedLogic = queryData.properties.copy(visualization = visualization)
     queryData.copy(properties = updatedLogic)

@@ -11,21 +11,20 @@ case class DataForDBQuery(
     requestId: UUID,
     domain: Domain,
     tables: List[DBQueryTable],
-    pagination: Option[ChatMessageRequestModel] = None,
     properties: DBQueryProperties
 )
 
 case class DBQueryTable(
     tableName: String,
     tableSchema: DomainSchemaTable,
-    attributes: List[DBQueryColumn],
-    isTargetEntity: Boolean = false
+    columns: List[DBQueryColumn],
+    isTargetTable: Boolean = false
 )
 
 case class DBQueryColumn(
-    tableName: String,
+    columnName: String,
     filterValues: List[DbQueryFilterValue],
-    isTargetAttribute: Boolean = false
+    isTargetColumn: Boolean = false
 )
 
 case class DbQueryFilterValue(
@@ -37,8 +36,10 @@ case class DbQueryFilterValue(
 case class DBQueryProperties(
     targetAttr: String,
     targetThing: String,
-    sortModelOpt: Option[BaseSortModel],
-    visualization: List[String]
+    sort: Option[BaseSortModel],
+    visualization: List[String],
+    page: Option[Int],
+    perPage: Option[Int]
 )
 
 object DataForDBQuery {

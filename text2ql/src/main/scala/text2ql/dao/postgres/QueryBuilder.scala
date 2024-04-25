@@ -29,36 +29,36 @@ class QueryBuilderImpl[F[_]: Sync](
 ) extends QueryBuilder[F] {
 
   override def buildConstantSqlChunk(queryData: DataForDBQuery): F[String] = for {
-    edges       <- domainSchema.relations(queryData.domain)
-    targetEntity = queryData.tables.find(_.isTargetEntity)
-    query       <- targetEntity.fold("".pure[F])(e => bfs("".pure[F], List(e), Set.empty[String], queryData, edges))
-    attributes   = queryData.tables.flatMap(e => e.attributes.map((e.tableName, _)))
-    filters     <- attributes
-                     .filter { case (_, attr) => attr.filterValues.nonEmpty }
-                     .traverse { case (thing, attr) => buildFiltersChunk(queryData.domain, thing)(attr) }
+    relations   <- domainSchema.relations(queryData.domain)
+    targetTable  = queryData.tables.find(_.isTargetTable)
+    query       <- targetTable.fold("".pure[F])(e => bfs("".pure[F], List(e), Set.empty[String], queryData, relations))
+    columns      = queryData.tables.flatMap(e => e.columns.map((e.tableName, _)))
+    filters     <- columns
+                     .filter { case (_, col) => col.filterValues.nonEmpty }
+                     .traverse { case (thing, col) => buildFiltersChunk(queryData.domain, thing)(col) }
     filtersChunk =
       filters.filter(_.nonEmpty).mkString(" and ").some.filter(_.nonEmpty).map("where " + _).fold("")(identity)
   } yield List("from", query, filtersChunk).mkString(" ")
 
   def buildGeneralSqlQuery(queryData: DataForDBQuery, constantSqlChunk: String): F[BuildQueryDTO] =
     for {
-      visualization          <- queryData.properties.visualization.pure[F]
-      attributesForMainSelect =
+      visualization       <- queryData.properties.visualization.pure[F]
+      columnsForMainSelect =
         queryData.tables
-          .flatMap(e => e.attributes.map((e.tableName, _)))
-          .filter { case (_, attribute) => visualization.contains(attribute.tableName) }
-      mainSelect             <- collectMainSelect(attributesForMainSelect, queryData.domain)
-      orderBy                 = buildOrderByChunk(queryData)
-      query                   = s"$mainSelect $constantSqlChunk $orderBy"
-      generalQuery            = withPagination(query, queryData.pagination)
-      countTargetChunk       <- buildCountTargetChunk(queryData)
-      countQuery              = s"select count(*), $countTargetChunk $constantSqlChunk"
+          .flatMap(e => e.columns.map((e.tableName, _)))
+          .filter { case (_, column) => visualization.contains(column.columnName) }
+      mainSelect          <- collectMainSelect(columnsForMainSelect, queryData.domain)
+      orderBy              = buildOrderByChunk(queryData)
+      query                = s"$mainSelect $constantSqlChunk $orderBy"
+      generalQuery         = withPagination(query, queryData.properties.page, queryData.properties.perPage)
+      countTargetChunk    <- buildCountTargetChunk(queryData)
+      countQuery           = s"select count(*), $countTargetChunk $constantSqlChunk"
     } yield BuildQueryDTO(
       generalQuery = generalQuery,
       countQuery = countQuery
     )
 
-  private def withPagination(query: String, pagination: Option[ChatMessageRequestModel]): String = {
+  private def withPagination(query: String, page: Option[Int], perPage: Option[Int]): String = {
 
     def withCursorBasedPagination(offset: Int, limit: Int): String =
       s"select * from (select row_number() over() as cursor, * from (select $query)" +
@@ -66,8 +66,8 @@ class QueryBuilderImpl[F[_]: Sync](
 
     def withOffsetLimit(offset: Int, limit: Int): String = s"select $query limit $limit offset $offset;"
 
-    val limitOpt  = pagination.flatMap(_.perPage)
-    val offsetOpt = pagination.flatMap(_.page).flatMap(o => limitOpt.map(_ * o))
+    val limitOpt  = perPage
+    val offsetOpt = page.flatMap(o => limitOpt.map(_ * o))
     (offsetOpt, limitOpt) match {
       case (Some(o), Some(l)) if dataConf.useCursor => withCursorBasedPagination(o, l)
       case (Some(o), Some(l))                       => withOffsetLimit(o, l)
@@ -76,12 +76,10 @@ class QueryBuilderImpl[F[_]: Sync](
   }
 
   private def buildOrderByChunk(queryData: DataForDBQuery): String =
-    queryData.pagination
-      .map(_.sort)
-      .filter(_.orderBy.exists(_.nonEmpty))
+    queryData.properties.sort
       .filter(sortModel => sortModel.orderBy.exists(_.nonEmpty) && sortModel.direction.nonEmpty)
       .fold {
-        val keyOpt = queryData.tables.find(_.isTargetEntity).map(e => s"${e.tableName}.${e.tableSchema.key}")
+        val keyOpt = queryData.tables.find(_.isTargetTable).map(e => s"${e.tableName}.${e.tableSchema.key}")
         keyOpt.fold("")(k => s"order by $k asc")
       } { sortModel =>
         s"order by ${sortModel.orderBy.getOrElse("orderBy")} ${sortModel.direction.getOrElse("sortDirection")}"
@@ -90,24 +88,24 @@ class QueryBuilderImpl[F[_]: Sync](
   private def buildCountTargetChunk(queryData: DataForDBQuery): F[String] = {
     val targetThing = queryData.properties.targetThing
     for {
-      distinctKey  <- domainSchema.thingKeys(queryData.domain).map(_.getOrElse(targetThing, targetThing))
+      distinctKey  <- domainSchema.tableKeys(queryData.domain).map(_.getOrElse(targetThing, targetThing))
       sqlNameKey   <- domainSchema.sqlNames(queryData.domain, distinctKey)
       distinctThing = s"${targetThing.toUpperCase}.$sqlNameKey"
     } yield s"count(distinct $distinctThing)"
   }
 
-  private def collectMainSelect(attributes: List[(String, DBQueryColumn)], domain: Domain): F[String] =
-    attributes
-      .traverse { case (entityName, attr) =>
+  private def collectMainSelect(columns: List[(String, DBQueryColumn)], domain: Domain): F[String] =
+    columns
+      .traverse { case (tableName, column) =>
         domainSchema
-          .sqlNames(domain, attr.tableName)
-          .map(name => s"$entityName.$name as ${attr.tableName}")
+          .sqlNames(domain, column.columnName)
+          .map(name => s"$tableName.$name as ${column.columnName}")
       }
       .map(_.mkString(", "))
 
   private def buildThingChunk(
-                               thing: DBQueryTable,
-                               domain: Domain
+      thing: DBQueryTable,
+      domain: Domain
   ): F[String] = for {
     selectChunk <- ("select " + thing.tableSchema.select).pure[F]
     pgSchemaName = dataConf.pgSchemas.getOrElse(domain, domain.entryName.toLowerCase)
@@ -121,51 +119,53 @@ class QueryBuilderImpl[F[_]: Sync](
                    ).collect { case Some(s) => s }.mkString(" ")
   } yield res
 
-  private def buildFiltersChunk(domain: Domain, thingName: String)(attributeQuery: DBQueryColumn): F[String] =
+  private def buildFiltersChunk(domain: Domain, tableName: String)(columnQuery: DBQueryColumn): F[String] =
     for {
       name        <- domainSchema
-                       .sqlNames(domain, attributeQuery.tableName)
-                       .map(name => s"${thingName.toUpperCase}.$name")
+                       .sqlNames(domain, columnQuery.columnName)
+                       .map(name => s"${tableName.toUpperCase}.$name")
       eitherOrAnd <- Sync[F].delay {
-                       val isOrExists = attributeQuery.filterValues.headOption.exists(_.joinValuesWithOr)
+                       val isOrExists = columnQuery.filterValues.headOption.exists(_.joinValuesWithOr)
                        if (isOrExists) "or" else "and"
                      }
-      attrs       <- attributeQuery.filterValues
-                       .traverse(buildAttributeFilter(domain, attributeQuery, name))
+      columns     <- columnQuery.filterValues
+                       .traverse(buildColumnFilter(domain, columnQuery, name))
                        .map(_.filter(_.nonEmpty))
-      res          = if (attrs.size > 1) {
-                       val chunk = attrs.mkString(s") $eitherOrAnd (")
+      res          = if (columns.size > 1) {
+                       val chunk = columns.mkString(s") $eitherOrAnd (")
                        s"(($chunk))"
-                     } else attrs.mkString(s" $eitherOrAnd ")
+                     } else columns.mkString(s" $eitherOrAnd ")
     } yield res
 
-  private def buildAttributeFilter(domain: Domain, attributeQuery: DBQueryColumn, sqlNameRaw: String)(
-      attribute: DbQueryFilterValue
-  ): F[String] = for {
-    attrsTypes <- domainSchema.schemaAttributesType(domain)
-    attrType    = attrsTypes.getOrElse(attributeQuery.tableName, "string")
-    sqlName     = if (attrType == "datetime") s"$sqlNameRaw::date" else sqlNameRaw
-    value       = if (List("string", "datetime").contains(attrType)) s"'${attribute.value}'" else s"${attribute.value}"
-    chunk       = s"$sqlName ${attribute.comparisonOperator} $value"
-  } yield chunk
+  private def buildColumnFilter(domain: Domain, columnQuery: DBQueryColumn, sqlNameRaw: String)(
+      columns: DbQueryFilterValue
+  ): F[String] =
+    for {
+      columnTypes <- domainSchema.types(domain)
+      columnType   = columnTypes.getOrElse(columnQuery.columnName, "string")
+      sqlName      = if (columnType == "datetime") s"$sqlNameRaw::date" else sqlNameRaw
+      value        = if (List("string", "datetime").contains(columnType)) s"'${columns.value}'" else s"${columns.value}"
+      chunk        = s"$sqlName ${columns.comparisonOperator} $value"
+    } yield chunk
 
   @tailrec
   private def bfs(
-                   acc: F[String],
-                   queue: List[DBQueryTable],
-                   visited: Set[String],
-                   queryData: DataForDBQuery,
-                   edges: List[DomainSchemaRelation]
+      acc: F[String],
+      queue: List[DBQueryTable],
+      visited: Set[String],
+      queryData: DataForDBQuery,
+      relations: List[DomainSchemaRelation]
   ): F[String] = queue match {
     case head :: tail =>
-      val adjacentVertices = edges.collect {
+      val adjacentVertices = relations.collect {
         case e if e.from == head.tableName => e.to
         case e if e.to == head.tableName   => e.from
       }
-      val sqlF             = for {
+
+      val sqlF = for {
         currentSql  <- acc
         vertexChunk <- buildThingChunk(head, queryData.domain)
-        joinOnChunk  = edges
+        joinOnChunk  = relations
                          .filter(e => Set(e.from, e.to).contains(head.tableName))
                          .filter(e => Set(e.from, e.to).intersect(visited).nonEmpty)
                          .map(e => s"${e.from}.${e.fromKey} = ${e.to}.${e.toKey}")
@@ -176,6 +176,7 @@ class QueryBuilderImpl[F[_]: Sync](
         res          =
           if (currentSql.isEmpty) s"$vertexChunk $joinOnChunk" else s"$currentSql inner join $vertexChunk $joinOnChunk"
       } yield res
+
       bfs(
         sqlF,
         tail ++ queryData.tables
@@ -184,7 +185,7 @@ class QueryBuilderImpl[F[_]: Sync](
           .filterNot(e => tail.map(_.tableName).contains(e.tableName)),
         visited + head.tableName,
         queryData,
-        edges
+        relations
       )
     case _            => acc
   }

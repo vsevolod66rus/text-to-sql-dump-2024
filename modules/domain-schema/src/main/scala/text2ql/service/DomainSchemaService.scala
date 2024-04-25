@@ -12,17 +12,14 @@ trait DomainSchemaService[F[_]] {
   def uploadActive(domain: Domain, contentStream: fs2.Stream[F, Byte]): F[Unit]
   def update(domain: Domain, domainSchemaContent: String): F[Unit]
   def toSchema: PartialFunction[Domain, DomainSchema[F]]
-  def vertices(domain: Domain): F[Map[String, DomainSchemaTable]]
-  def schemaAttributesType(domain: Domain): F[Map[String, String]]
-  def attributesTitle(domain: Domain): F[Map[String, String]]
+  def tables(domain: Domain): F[Map[String, DomainSchemaTable]]
+  def types(domain: Domain): F[Map[String, String]]
+  def titles(domain: Domain): F[Map[String, String]]
   def sqlNames(domain: Domain, key: String): F[String]
-  def sqlNamesMap(domain: Domain): F[Map[String, String]]
   def relations(domain: Domain): F[List[DomainSchemaRelation]]
-  def thingKeys(domain: Domain): F[Map[String, String]]
-  def thingTitle(originalName: String, domain: Domain): F[String]
-  def thingKeysSQL(domain: Domain): F[Map[String, String]]
-  def getColumnsByTable(domain: Domain)(thingName: String): F[List[String]]
-  def getTableByColumn(domain: Domain)(attrName: String): F[String]
+  def tableKeys(domain: Domain): F[Map[String, String]]
+  def getColumnsByTable(domain: Domain)(tableName: String): F[List[String]]
+  def getTableByColumn(domain: Domain)(columnName: String): F[String]
 }
 
 object DomainSchemaService {
@@ -31,8 +28,8 @@ object DomainSchemaService {
     domainSchemaHR <- DomainSchema[F](Domain.HR)
   } yield new DomainSchemaServiceImpl(domainSchemaHR)
 
-  val A_TYPE = "attribute_type"
-  val E_TYPE = "entity_type"
+  val COLUMN = "column"
+  val TABLE  = "table"
   val CO     = "comparison_operator"
 
 }
@@ -59,34 +56,24 @@ class DomainSchemaServiceImpl[F[_]: Async](
 
   def update(domain: Domain, domainSchemaContent: String): F[Unit] = toSchema(domain).update(domainSchemaContent)
 
-  def vertices(domain: Domain): F[Map[String, DomainSchemaTable]] = toSchema(domain).tables
+  def tables(domain: Domain): F[Map[String, DomainSchemaTable]] = toSchema(domain).tables
 
-  def schemaAttributesType(domain: Domain): F[Map[String, String]] = toSchema(domain).types
+  def types(domain: Domain): F[Map[String, String]] = toSchema(domain).types
 
-  def attributesTitle(domain: Domain): F[Map[String, String]] = toSchema(domain).titles
+  def titles(domain: Domain): F[Map[String, String]] = toSchema(domain).titles
 
   def sqlNames(domain: Domain, key: String): F[String] =
     toSchema(domain).sqlNames.map(_.getOrElse(key, key))
 
-  def sqlNamesMap(domain: Domain): F[Map[String, String]] =
-    toSchema(domain).sqlNames
-
   def relations(domain: Domain): F[List[DomainSchemaRelation]] = toSchema(domain).relations
 
-  def thingKeys(domain: Domain): F[Map[String, String]] = toSchema(domain).thingKeys
+  def tableKeys(domain: Domain): F[Map[String, String]] = toSchema(domain).tableKeys
 
-  def thingTitle(originalName: String, domain: Domain): F[String] =
-    attributesTitle(domain).map(_.getOrElse(originalName, originalName))
+  def getColumnsByTable(domain: Domain)(tableName: String): F[List[String]] =
+    toSchema(domain).tableColumns.map(_.getOrElse(tableName, Set.empty).toList)
 
-  def thingKeysSQL(domain: Domain): F[Map[String, String]] = toSchema(domain).thingKeysSQL
-
-  def getColumnsByTable(domain: Domain)(thingName: String): F[List[String]] =
-    toSchema(domain).thingAttributes.map(_.getOrElse(thingName, Set.empty).toList)
-
-  def getTableByColumn(domain: Domain)(attrName: String): F[String] =
-    toSchema(domain).thingAttributes.map(
-      _.find { case (_, v) => v.contains(attrName) }.map(_._1).getOrElse(s"Thing for $attrName not found")
+  def getTableByColumn(domain: Domain)(columnName: String): F[String] =
+    toSchema(domain).tableColumns.map(
+      _.find { case (_, v) => v.contains(columnName) }.map(_._1).getOrElse(s"Table for $columnName not found")
     )
-
-  private def thingAttributes(domain: Domain): F[Map[String, Set[String]]] = toSchema(domain).thingAttributes
 }

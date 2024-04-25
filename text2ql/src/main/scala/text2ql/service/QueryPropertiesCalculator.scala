@@ -23,19 +23,21 @@ class UserRequestTypeCalculatorImpl[F[+_]: Sync](domainSchema: DomainSchemaServi
     for {
       targetOpt        <- entities.find(_.isTarget).pure[F]
       targetVertexName <- getTargetVertexName(targetOpt, domain)
-      targetAttrName   <- getTargetAttrName(targetOpt, domain)
+      targetcolumnName <- getTargetcolumnName(targetOpt, domain)
     } yield DBQueryProperties(
-      targetAttr = targetAttrName,
+      targetAttr = targetcolumnName,
       targetThing = targetVertexName,
-      sortModelOpt = None,
-      visualization = List.empty
+      sort = None,
+      visualization = List.empty,
+      page = 0.some,
+      perPage = 10.some
     )
 
   private def getTargetVertexName(targetOpt: Option[EnrichedNamedEntity], domain: Domain): F[String] = for {
     targetEntity        <- Sync[F].fromOption(targetOpt, ServerErrorWithMessage("no target entity from nlp"))
     targetEntityNameOpt <- targetEntity.tag match {
-                             case E_TYPE => targetEntity.value.some.pure[F]
-                             case A_TYPE =>
+                             case TABLE  => targetEntity.value.some.pure[F]
+                             case COLUMN =>
                                targetEntity.value.some.traverse(v => domainSchema.getTableByColumn(domain)(v))
                              case _      => domainSchema.getTableByColumn(domain)(targetEntity.tag).map(_.some)
                            }
@@ -43,16 +45,16 @@ class UserRequestTypeCalculatorImpl[F[+_]: Sync](domainSchema: DomainSchemaServi
       Sync[F].fromOption(targetEntityNameOpt, ServerErrorWithMessage("no selected value for target entity"))
   } yield targetEntityName
 
-  private def getTargetAttrName(
+  private def getTargetcolumnName(
       targetOpt: Option[EnrichedNamedEntity],
       domain: Domain
   ): F[String] = for {
-    targetEntity   <- Sync[F].fromOption(targetOpt, ServerErrorWithMessage("no target entity from nlp"))
-    targetAttrName <- targetEntity.tag match {
-                        case E_TYPE =>
-                          domainSchema.thingKeys(domain).map(_.getOrElse(targetEntity.value, targetEntity.value))
-                        case _      => targetEntity.value.pure[F]
-                      }
-  } yield targetAttrName
+    targetEntity     <- Sync[F].fromOption(targetOpt, ServerErrorWithMessage("no target entity from nlp"))
+    targetcolumnName <- targetEntity.tag match {
+                          case TABLE =>
+                            domainSchema.tableKeys(domain).map(_.getOrElse(targetEntity.value, targetEntity.value))
+                          case _     => targetEntity.value.pure[F]
+                        }
+  } yield targetcolumnName
 
 }

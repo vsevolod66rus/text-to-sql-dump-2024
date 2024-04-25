@@ -7,7 +7,7 @@ import sttp.tapir.Schema
 import text2ql.api._
 
 final case class CheckDomainSchemaResponse(
-    entities: List[String],
+    tables: List[String],
     queries: BuildQueryDTO,
     result: Either[String, GridWithDataRenderTypeResponseModel]
 )

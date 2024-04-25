@@ -47,7 +47,7 @@ class ResponseBuilderImpl[F[_]: Async](
                       items = items,
                       total = countQueryDTO.countRecords
                     )
-      res         = toAskResponse(countQueryDTO, buildQueryDTO.generalQuery, queryData)(data)
+      res         = toAskResponse(countQueryDTO, buildQueryDTO.generalQuery)(data)
     } yield res
 
   override def makeGridProperties(
@@ -59,30 +59,29 @@ class ResponseBuilderImpl[F[_]: Async](
       row: Vector[String]
   ): F[Map[String, GridPropertyValue]]         =
     properties
-      .traverse(prop => getAttributeValue(headers, prop.key, domain)(row).map(v => prop.key -> v))
+      .traverse(prop => getColumnValue(headers, prop.key, domain)(row).map(v => prop.key -> v))
       .map(_.groupMapReduce(_._1)(_._2)((_, v) => v))
       .map(m => Map("id" -> GridPropertyValueString(java.util.UUID.randomUUID().toString)) ++ m)
 
-  private def getAttributeValue(
+  private def getColumnValue(
       headers: Vector[String],
-      attribute: String,
+      column: String,
       domain: Domain
-  )(row: Vector[String]): F[GridPropertyValue] = domainSchema.schemaAttributesType(domain).map { attrs =>
-    val stringValue = row(headers.indexOf(attribute))
-    val attrType    = attrs.getOrElse(attribute, "string")
+  )(row: Vector[String]): F[GridPropertyValue] = domainSchema.types(domain).map { attrs =>
+    val stringValue = row(headers.indexOf(column))
+    val attrType    = attrs.getOrElse(column, "string")
     GridPropertyValue.fromValueAndType(stringValue, attrType)
   }
 
   private def toAskResponse(
       count: CountQueryDTO,
-      query: String,
-      queryData: DataForDBQuery
+      query: String
   )(grid: GridWithDataRenderTypeResponseModel): AskRepoResponse =
     if (count.countRecords == 0)
       AskRepoResponse(text = "По Вашему запросу данных не найдено.".some, count = count, query = query.some)
     else
       AskRepoResponse(
-        custom = AskResponsePayload(grid.some, pagination = queryData.pagination).some,
+        custom = AskResponsePayload(grid).some,
         count = count,
         query = query.some
       )
@@ -91,12 +90,12 @@ class ResponseBuilderImpl[F[_]: Async](
       logic: DBQueryProperties,
       domain: Domain
   ): F[List[GridPropertyItemModel]] = logic.visualization
-    .traverse { attribute =>
+    .traverse { column =>
       for {
-        attrType <- domainSchema.schemaAttributesType(domain).map(_.getOrElse(attribute, "string"))
-        title    <- domainSchema.attributesTitle(domain).map(_.getOrElse(attribute, attribute))
+        attrType <- domainSchema.types(domain).map(_.getOrElse(column, "string"))
+        title    <- domainSchema.titles(domain).map(_.getOrElse(column, column))
       } yield GridPropertyItemModel(
-        key = attribute,
+        key = column,
         title = title,
         dataType = GridPropertyDataType.fromType(attrType)
       )

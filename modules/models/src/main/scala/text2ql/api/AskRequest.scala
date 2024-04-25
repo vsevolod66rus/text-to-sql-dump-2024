@@ -9,8 +9,6 @@ import sttp.tapir.codec.enumeratum.TapirCodecEnumeratum
 import java.util.UUID
 
 case class ChatMessageRequestModel(
-    page: Option[Int],
-    perPage: Option[Int],
     sort: BaseSortModel,
     chat: AddChatMessageRequestModel,
     domain: Option[Domain] = None
