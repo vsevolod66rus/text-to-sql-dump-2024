@@ -21,7 +21,6 @@ object App extends WSApp[ApplicationConfig] {
       xaStorage           <- TransactorProvider[F](changelog, classLoader, conf.database.storage)
       exceptionHandler    <- CustomExceptionHandler[F]
       domainSchema        <- DomainSchemaService[F]
-      _                   <- QueryBuilder[F](domainSchema, conf.database.data)
       qm                  <- QueryManager[F](xaStorage)
       domainSchemaChecker <- DomainSchemaChecker[F](qm, conf.database.data)
       schemaController    <- DomainSchemaController[F](domainSchema, domainSchemaChecker)

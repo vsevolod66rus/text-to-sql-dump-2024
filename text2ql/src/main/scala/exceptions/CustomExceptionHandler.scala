@@ -8,7 +8,7 @@ import sttp.model.StatusCode._
 import sttp.monad.MonadError
 import sttp.tapir.server.interceptor.exception.{ExceptionContext, ExceptionHandler}
 import sttp.tapir.server.model.ValuedEndpointOutput
-import text2ql.EndpointError.{internalServerError, tooManyRequests}
+import text2ql.EndpointError.internalServerError
 import org.typelevel.log4cats.Logger
 
 object CustomExceptionHandler {
@@ -27,9 +27,8 @@ object CustomExceptionHandler {
   }
 
   private def handleException[F[_]: MonadError](e: Throwable): F[Option[ValuedEndpointOutput[_]]] = e match {
-    case TypeDBConnectionsLimitExceeded => tooManyRequests("typeDBNoFreeConnections").outputWithCode(TooManyRequests)
-    case e: ServerErrorWithMessage      => internalServerError(e.message).outputWithCode(TooManyRequests)
-    case _                              => internalServerError("internalServerErrorMsg").outputWithCode(InternalServerError)
+    case e: ServerErrorWithMessage => internalServerError(e.message).outputWithCode(TooManyRequests)
+    case _                         => internalServerError("internalServerErrorMsg").outputWithCode(InternalServerError)
   }
 
 }
